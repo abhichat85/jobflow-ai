@@ -11,6 +11,10 @@ from app.schemas.interview import (
     InterviewResponse,
     InterviewUpdate,
 )
+from app.services.claude import ClaudeService
+from app.agents.interview_prep import InterviewPrepAgent, InterviewPrepInput, InterviewPrepOutput
+from app.models.profile import UserProfile, Experience, Skill
+from app.models.job import Job
 
 router = APIRouter(prefix="/api/interviews", tags=["interviews"])
 
@@ -50,4 +54,55 @@ def get_interview_prep(interview_id: int, db: Session = Depends(get_db)):
         .filter(InterviewPrep.interview_id == interview_id)
         .first()
     )
+    return prep
+
+
+@router.post("/{interview_id}/generate-prep", response_model=InterviewPrepResponse)
+async def generate_prep(interview_id: int, db: Session = Depends(get_db)):
+    interview = db.query(Interview).get(interview_id)
+    if not interview:
+        raise HTTPException(status_code=404, detail="Interview not found")
+
+    job = db.query(Job).get(interview.job_id)
+    profile = db.query(UserProfile).first()
+    experiences = db.query(Experience).filter(Experience.user_profile_id == profile.id).all()
+    skills = db.query(Skill).filter(Skill.user_profile_id == profile.id).all()
+
+    claude = ClaudeService()
+    agent = InterviewPrepAgent(claude)
+    result = await agent.run(
+        InterviewPrepInput(
+            candidate_bio=profile.bio or "",
+            candidate_positioning=profile.positioning_statement or "",
+            experiences=[
+                {"role_title": e.role_title, "company_name": e.company_name}
+                for e in experiences
+            ],
+            projects=[],
+            skills=[s.name for s in skills],
+            company_name=interview.company_name or job.company_name or "",
+            company_url=job.company_url,
+            job_description=job.job_description or "",
+            role_title=job.role_title or "",
+            interview_stage=interview.interview_stage or "screening",
+        ),
+        InterviewPrepOutput,
+    )
+
+    prep = InterviewPrep(
+        interview_id=interview.id,
+        job_id=job.id,
+        company_brief=result.company_brief,
+        product_analysis=result.product_analysis,
+        role_analysis=result.role_analysis,
+        likely_questions=result.likely_questions,
+        suggested_answers=result.suggested_answers,
+        talking_points=result.talking_points,
+        questions_to_ask=result.questions_to_ask,
+        thirty_sixty_ninety_plan=result.thirty_sixty_ninety_plan,
+        salary_negotiation_notes=result.salary_negotiation_notes,
+    )
+    db.add(prep)
+    db.commit()
+    db.refresh(prep)
     return prep

@@ -13,7 +13,12 @@ from app.schemas.outreach import (
     OutreachCreate,
     OutreachResponse,
     OutreachUpdate,
+    OutreachGenerateRequest,
 )
+from app.services.claude import ClaudeService
+from app.agents.outreach_writer import OutreachWriterAgent, OutreachInput, OutreachOutput
+from app.models.profile import UserProfile
+from app.models.job import Job
 
 router = APIRouter(prefix="/api", tags=["outreach"])
 
@@ -123,3 +128,50 @@ def get_pending_followups(db: Session = Depends(get_db)):
         )
         .all()
     )
+
+
+@router.post("/outreach/generate", response_model=OutreachResponse)
+async def generate_outreach(data: OutreachGenerateRequest, db: Session = Depends(get_db)):
+    profile = db.query(UserProfile).first()
+    job = db.query(Job).get(data.job_id)
+    contact = db.query(Contact).get(data.contact_id)
+
+    from app.models.job import JobScore
+    score = db.query(JobScore).filter(JobScore.job_id == job.id).first()
+
+    claude = ClaudeService()
+    agent = OutreachWriterAgent(claude)
+    result = await agent.run(
+        OutreachInput(
+            candidate_name=profile.name,
+            candidate_positioning=profile.positioning_statement or "",
+            candidate_experience_summary=profile.bio or "",
+            company_name=job.company_name or "",
+            role_title=job.role_title or "",
+            job_description=job.job_description or "",
+            contact_name=contact.name,
+            contact_title=contact.title or "",
+            outreach_angle=score.outreach_angle if score else "",
+        ),
+        OutreachOutput,
+    )
+
+    message_text = (
+        result.linkedin_message if data.channel == "linkedin"
+        else result.email_message if data.channel == "email"
+        else result.twitter_message
+    )
+
+    outreach = Outreach(
+        job_id=job.id,
+        contact_id=contact.id,
+        channel=data.channel,
+        message_type="initial",
+        message=message_text,
+        subject=result.email_subject if data.channel == "email" else None,
+        status="draft",
+    )
+    db.add(outreach)
+    db.commit()
+    db.refresh(outreach)
+    return outreach
