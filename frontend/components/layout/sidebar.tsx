@@ -39,6 +39,14 @@ export function Sidebar() {
           </Link>
         ))}
       </nav>
+      <div className="mt-6 pt-6 border-t">
+        <Link
+          href="/profile/ingest"
+          className="block w-full text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-md px-3 py-2 hover:opacity-90"
+        >
+          ✨ Ingest Profile
+        </Link>
+      </div>
     </aside>
   );
 }

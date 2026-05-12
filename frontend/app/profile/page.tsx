@@ -43,6 +43,24 @@ export default function ProfilePage() {
     <div className="max-w-3xl space-y-8">
       <h1 className="text-2xl font-bold">Profile</h1>
 
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-5 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="font-semibold text-blue-900 mb-1">
+            Set up your profile with AI
+          </h2>
+          <p className="text-sm text-blue-800">
+            Paste LinkedIn, resume, GitHub — we extract everything and synthesize your positioning
+            across 5 resume variants. Recommended before adding any jobs.
+          </p>
+        </div>
+        <a
+          href="/profile/ingest"
+          className="shrink-0 inline-flex items-center justify-center rounded-md bg-blue-600 text-white text-sm font-medium px-4 py-2 hover:bg-blue-700"
+        >
+          Ingest Profile →
+        </a>
+      </div>
+
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Personal Info</h2>
         <div className="grid grid-cols-2 gap-3">
@@ -67,6 +85,36 @@ export default function ProfilePage() {
         />
         <Button onClick={() => updateProfile.mutate(form)}>Save Profile</Button>
       </section>
+
+      {((form as any).career_narrative || (form as any).differentiators?.length || (form as any).ats_keywords?.length) && (
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold">Synthesized Positioning</h2>
+          {(form as any).career_narrative && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-500 mb-1">Career Narrative</h3>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">{(form as any).career_narrative}</p>
+            </div>
+          )}
+          {(form as any).differentiators?.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-500 mb-1">Differentiators</h3>
+              <ul className="text-sm list-disc pl-5 space-y-1">
+                {(form as any).differentiators.map((d: string, i: number) => <li key={i}>{d}</li>)}
+              </ul>
+            </div>
+          )}
+          {(form as any).ats_keywords?.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-500 mb-1">ATS Keywords</h3>
+              <div className="flex flex-wrap gap-1">
+                {(form as any).ats_keywords.map((k: string) => (
+                  <span key={k} className="inline-block text-xs px-2 py-1 bg-gray-100 rounded">{k}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       <section>
         <h2 className="text-lg font-semibold mb-3">
