@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @page { size: A4; margin: 1.5cm; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 10pt; line-height: 1.4; color: #333; }
+  h1 { font-size: 18pt; margin: 0 0 4px 0; color: #111; }
+  .contact { font-size: 9pt; color: #666; margin-bottom: 12px; }
+  .section-title { font-size: 11pt; font-weight: bold; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin: 12px 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+  .summary { font-size: 10pt; color: #444; margin-bottom: 8px; }
+  .experience { margin-bottom: 10px; }
+  .exp-header { display: flex; justify-content: space-between; }
+  .exp-title { font-weight: bold; }
+  .exp-company { font-style: italic; }
+  .exp-date { color: #666; font-size: 9pt; }
+  ul { margin: 4px 0; padding-left: 18px; }
+  li { margin-bottom: 2px; font-size: 10pt; }
+  .skills { font-size: 10pt; }
+</style>
+</head>
+<body>
+  <h1>{{ name }}</h1>
+  <div class="contact">{{ email }} {% if phone %}| {{ phone }}{% endif %}</div>
+
+  <div class="section-title">Summary</div>
+  <div class="summary">{{ summary }}</div>
+
+  <div class="section-title">Experience</div>
+  {% for exp in experiences %}
+  <div class="experience">
+    <div class="exp-header">
+      <span><span class="exp-title">{{ exp.role_title }}</span> — <span class="exp-company">{{ exp.company_name }}</span></span>
+      <span class="exp-date">{{ exp.date_range }}</span>
+    </div>
+    <ul>
+      {% for bullet in exp.bullets %}
+      <li>{{ bullet }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+
+  <div class="section-title">Skills</div>
+  <div class="skills">{{ skills | join(', ') }}</div>
+</body>
+</html>
