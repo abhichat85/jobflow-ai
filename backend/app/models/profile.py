@@ -28,6 +28,9 @@ class UserProfile(Base):
     notice_period: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     positioning_statement: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     bio: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    career_narrative: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    differentiators: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    ats_keywords: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
