@@ -21,6 +21,14 @@ export const api = {
     fetchApi<any>("/api/profile/experiences", { method: "POST", body: JSON.stringify(data) }),
   getSkills: () => fetchApi<any[]>("/api/profile/skills"),
   getResumeVariants: () => fetchApi<any[]>("/api/profile/resume-variants"),
+  ingestProfile: (data: {
+    linkedin_text?: string;
+    resume_text?: string;
+    github_url?: string;
+    website_url?: string;
+    writing_samples?: string[];
+    additional_context?: string;
+  }) => fetchApi<any>("/api/profile/ingest", { method: "POST", body: JSON.stringify(data) }),
 
   // Jobs
   getJobs: (params?: Record<string, string>) => {
