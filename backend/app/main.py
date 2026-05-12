@@ -6,6 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import Base, engine
+from app.routes.profile import router as profile_router
+from app.routes.jobs import router as jobs_router
+from app.routes.assets import router as assets_router
+from app.routes.outreach import router as outreach_router
+from app.routes.crm import router as crm_router
+from app.routes.interviews import router as interviews_router
+from app.routes.discovery import router as discovery_router
+from app.routes.system import router as system_router
 
 
 @asynccontextmanager
@@ -25,6 +33,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(profile_router)
+app.include_router(jobs_router)
+app.include_router(assets_router)
+app.include_router(outreach_router)
+app.include_router(crm_router)
+app.include_router(interviews_router)
+app.include_router(discovery_router)
+app.include_router(system_router)
 
 
 @app.get("/api/health")
