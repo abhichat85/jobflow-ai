@@ -108,6 +108,9 @@ class ProfileUpdate(BaseModel):
     notice_period: Optional[str] = None
     positioning_statement: Optional[str] = None
     bio: Optional[str] = None
+    career_narrative: Optional[str] = None
+    differentiators: Optional[list[str]] = None
+    ats_keywords: Optional[list[str]] = None
 
 
 class ProfileResponse(BaseModel):
@@ -128,7 +131,19 @@ class ProfileResponse(BaseModel):
     notice_period: Optional[str] = None
     positioning_statement: Optional[str] = None
     bio: Optional[str] = None
+    career_narrative: Optional[str] = None
+    differentiators: Optional[list[str]] = None
+    ats_keywords: Optional[list[str]] = None
     created_at: datetime
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class ProfileIngestRequest(BaseModel):
+    linkedin_text: Optional[str] = None
+    resume_text: Optional[str] = None
+    github_url: Optional[str] = None
+    website_url: Optional[str] = None
+    writing_samples: Optional[list[str]] = None
+    additional_context: Optional[str] = None
