@@ -31,3 +31,6 @@ out/
 # Runtime artifacts (deploy.sh)
 logs/
 .pids/
+
+# Redis snapshot (created when redis-server runs in repo root)
+dump.rdb
