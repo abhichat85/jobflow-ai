@@ -17,6 +17,7 @@ from app.routes.interviews import router as interviews_router
 from app.routes.discovery import router as discovery_router
 from app.routes.settings import router as settings_router
 from app.routes.system import router as system_router
+from app.routes.apply import router as apply_router
 
 ALLOWED_ORIGINS = ["http://localhost:3000"]
 
@@ -65,6 +66,7 @@ app.include_router(interviews_router)
 app.include_router(discovery_router)
 app.include_router(settings_router)
 app.include_router(system_router)
+app.include_router(apply_router)
 
 
 @app.get("/api/health")
