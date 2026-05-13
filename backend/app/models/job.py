@@ -30,6 +30,9 @@ class Job(Base):
     status: Mapped[str] = mapped_column(String(20), default="discovered")
     fit_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     discovered_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    apply_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    ats_type: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    application_status: Mapped[str] = mapped_column(String(30), default="discovered")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()

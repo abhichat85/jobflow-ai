@@ -120,6 +120,24 @@ def test_create_contact_and_outreach(db):
     assert outreach.id is not None
 
 
+def test_job_has_new_apply_fields(db):
+    from app.models.job import Job
+    job = Job(
+        company_name="TestCo",
+        role_title="AI PM",
+        job_url="https://example.com/job/1",
+        apply_url="https://boards.greenhouse.io/testco/jobs/1",
+        ats_type="greenhouse",
+        application_status="discovered",
+    )
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+    assert job.apply_url == "https://boards.greenhouse.io/testco/jobs/1"
+    assert job.ats_type == "greenhouse"
+    assert job.application_status == "discovered"
+
+
 def test_create_interview_and_prep(db):
     job = Job(company_name="Acme", role_title="PM", status="applied")
     db.add(job)
