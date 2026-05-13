@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.schedules import crontab
 
 from app.config import settings
 
@@ -17,7 +18,11 @@ celery_app.conf.update(
     beat_schedule={
         "check-followups-daily": {
             "task": "app.tasks.check_pending_followups",
-            "schedule": 86400.0,
+            "schedule": 86400.0,  # 24h
+        },
+        "discover-jobs-every-6h": {
+            "task": "app.tasks.discover_jobs",
+            "schedule": crontab(minute=0, hour="*/6"),
         },
     },
 )
