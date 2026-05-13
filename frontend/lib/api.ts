@@ -63,3 +63,80 @@ export const api = {
     fetchApi<any>("/api/interviews", { method: "POST", body: JSON.stringify(data) }),
   getInterviewPrep: (id: number) => fetchApi<any>(`/api/interviews/${id}/prep`),
 };
+
+// ----- Discovery -----
+export async function getDiscoveryStatus() {
+  const r = await fetch(`${API_BASE}/api/discovery/status`);
+  if (!r.ok) throw new Error("Failed to load discovery status");
+  return r.json();
+}
+
+export async function runDiscoveryNow() {
+  const r = await fetch(`${API_BASE}/api/discovery/run`, { method: "POST" });
+  if (!r.ok) throw new Error("Failed to start discovery");
+  return r.json();
+}
+
+// ----- Settings -----
+export interface AppSettings {
+  id: number;
+  linkedin_cookie_present: boolean;
+  linkedin_search_url: string | null;
+  yc_filters: Record<string, unknown> | null;
+  discovery_enabled: boolean;
+  discovery_interval_hours: number;
+  discovery_last_run_at: string | null;
+  discovery_last_count: number | null;
+  auto_review_threshold: number;
+  auto_apply_threshold: number;
+  daily_apply_cap: number;
+  default_resume_variant: string | null;
+  cover_letter_tone: string;
+}
+
+export async function getSettings(): Promise<AppSettings> {
+  const r = await fetch(`${API_BASE}/api/settings`);
+  if (!r.ok) throw new Error("Failed to load settings");
+  return r.json();
+}
+
+export async function updateSettings(
+  patch: Partial<AppSettings> & { linkedin_cookie?: string }
+): Promise<AppSettings> {
+  const r = await fetch(`${API_BASE}/api/settings`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  if (!r.ok) throw new Error("Failed to update settings");
+  return r.json();
+}
+
+// ----- Apply -----
+export async function getApplyPreview(jobId: number) {
+  const r = await fetch(`${API_BASE}/api/apply/${jobId}/preview`);
+  if (!r.ok) throw new Error("Failed to load apply preview");
+  return r.json();
+}
+
+export async function submitApplication(jobId: number, formData: Record<string, unknown>) {
+  const r = await fetch(`${API_BASE}/api/apply/${jobId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(formData),
+  });
+  if (!r.ok) throw new Error("Failed to submit application");
+  return r.json();
+}
+
+export async function getApplyStatus(jobId: number) {
+  const r = await fetch(`${API_BASE}/api/apply/${jobId}/status`);
+  if (!r.ok) throw new Error("Failed to load apply status");
+  return r.json();
+}
+
+export async function skipApplication(jobId: number) {
+  const r = await fetch(`${API_BASE}/api/apply/${jobId}/skip`, { method: "POST" });
+  if (!r.ok) throw new Error("Failed to skip application");
+  return r.json();
+}
