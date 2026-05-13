@@ -28,6 +28,7 @@ from app.models.job import Job, JobRequirement, JobScore
 from app.models.asset import ApplicationAsset
 from app.models.outreach import Contact, Outreach
 from app.models.interview import Interview, InterviewPrep
+from app.models.settings import UserSettings
 
 target_metadata = Base.metadata
 
