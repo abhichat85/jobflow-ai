@@ -29,6 +29,7 @@ from app.models.asset import ApplicationAsset
 from app.models.outreach import Contact, Outreach
 from app.models.interview import Interview, InterviewPrep
 from app.models.settings import UserSettings
+from app.models.application import ApplicationAttempt
 
 target_metadata = Base.metadata
 
