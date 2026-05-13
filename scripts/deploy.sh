@@ -77,6 +77,12 @@ log "Installing backend dependencies"
 .venv/bin/pip install -q -r requirements.txt
 ok "Backend dependencies ready"
 
+log "Ensuring Playwright Chromium is installed"
+if ! .venv/bin/playwright install --dry-run chromium 2>/dev/null | grep -q "already installed"; then
+  .venv/bin/playwright install chromium
+fi
+ok "Playwright Chromium ready"
+
 # Ensure data directories exist
 mkdir -p data/db data/resumes data/templates
 
