@@ -1,7 +1,13 @@
+import logging
+import logging
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
+
+logger = logging.getLogger(__name__)
 
 from app.agents.profile_ingest import ProfileIngestAgent, ProfileIngestInput, ProfileIngestOutput
 from app.agents.profile_synthesis import ProfileSynthesisAgent, ProfileSynthesisInput, ProfileSynthesisOutput
@@ -169,7 +175,6 @@ def update_resume_variant(
 @router.post("/ingest", response_model=ProfileResponse)
 async def ingest_profile(data: ProfileIngestRequest, db: Session = Depends(get_db)):
     """Ingest raw profile sources, extract structured data, and synthesize positioning."""
-
     # Step 1: Gather all source text
     sources: list[tuple[str, str]] = []
     if data.linkedin_text:

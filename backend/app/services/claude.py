@@ -10,9 +10,13 @@ T = TypeVar("T", bound=BaseModel)
 
 class ClaudeService:
     def __init__(self, api_key: str | None = None):
-        self.client = anthropic.AsyncAnthropic(
-            api_key=api_key or settings.anthropic_api_key
-        )
+        resolved_key = (api_key or settings.anthropic_api_key or "").strip()
+        if not resolved_key:
+            raise RuntimeError(
+                "ANTHROPIC_API_KEY is not configured. Set it in the project root "
+                ".env file (not backend/.env) and restart the backend."
+            )
+        self.client = anthropic.AsyncAnthropic(api_key=resolved_key)
         self.total_input_tokens = 0
         self.total_output_tokens = 0
 

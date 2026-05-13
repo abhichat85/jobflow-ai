@@ -112,8 +112,12 @@ start_bg() {
   local pidfile="$PIDS/$name.pid"
 
   log "Starting $name → $logfile"
+  # Unset any inherited empty-string secrets so pydantic_settings reads them from .env.
+  # (Some parent shells — including Claude Code's — export these as empty.)
   # shellcheck disable=SC2086
-  ( cd "$ROOT" && nohup bash -c "$cmd" > "$logfile" 2>&1 & echo $! > "$pidfile" )
+  ( cd "$ROOT" \
+    && unset ANTHROPIC_API_KEY FIRECRAWL_API_KEY TAVILY_API_KEY \
+    && nohup bash -c "$cmd" > "$logfile" 2>&1 & echo $! > "$pidfile" )
   sleep 1
   if kill -0 "$(cat "$pidfile")" 2>/dev/null; then
     ok "$name started (pid $(cat "$pidfile"))"
