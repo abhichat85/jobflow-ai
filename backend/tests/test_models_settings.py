@@ -27,3 +27,18 @@ def test_user_settings_defaults(db: Session):
     assert s.auto_apply_threshold == 80
     assert s.daily_apply_cap == 10
     assert s.cover_letter_tone == "professional"
+
+
+def test_user_settings_new_preference_defaults(db: Session):
+    s = UserSettings()
+    db.add(s)
+    db.commit()
+    db.refresh(s)
+    assert s.job_titles == "[]"
+    assert s.locations == "[]"
+    assert s.remote_preference == "any"
+    assert s.seniority_levels == "[]"
+    assert s.company_stage == "any"
+    assert s.min_salary is None
+    assert s.linkedin_auth_status == "disconnected"
+    assert s.linkedin_search_urls == "[]"
