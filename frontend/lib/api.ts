@@ -140,3 +140,60 @@ export async function skipApplication(jobId: number) {
   if (!r.ok) throw new Error("Failed to skip application");
   return r.json();
 }
+
+// ----- Preferences -----
+export interface JobPreferences {
+  job_titles: string[];
+  locations: string[];
+  remote_preference: "any" | "remote" | "hybrid" | "onsite";
+  seniority_levels: string[];
+  company_stage: "any" | "startup" | "growth" | "public";
+  min_salary: number | null;
+  linkedin_auth_status: "disconnected" | "connected" | "expired";
+  linkedin_search_urls: string[];
+  linkedin_search_url: string | null;
+}
+
+export async function getPreferences(): Promise<JobPreferences> {
+  const r = await fetch(`${API_BASE}/api/settings/preferences`);
+  if (!r.ok) throw new Error("Failed to load preferences");
+  return r.json();
+}
+
+export async function updatePreferences(
+  patch: Partial<Omit<JobPreferences, "linkedin_auth_status" | "linkedin_search_urls" | "linkedin_search_url">>
+): Promise<JobPreferences> {
+  const r = await fetch(`${API_BASE}/api/settings/preferences`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  if (!r.ok) throw new Error("Failed to update preferences");
+  return r.json();
+}
+
+// ----- LinkedIn Auth -----
+export async function startLinkedInAuth(): Promise<{ session_id: string }> {
+  const r = await fetch(`${API_BASE}/api/settings/linkedin/start-auth`, {
+    method: "POST",
+  });
+  if (!r.ok) throw new Error("Failed to start LinkedIn auth");
+  return r.json();
+}
+
+export async function getLinkedInAuthStatus(
+  sessionId: string
+): Promise<{ status: "waiting" | "connected" | "timeout" }> {
+  const r = await fetch(
+    `${API_BASE}/api/settings/linkedin/auth-status/${sessionId}`
+  );
+  if (!r.ok) throw new Error("Failed to get auth status");
+  return r.json();
+}
+
+export async function disconnectLinkedIn(): Promise<void> {
+  const r = await fetch(`${API_BASE}/api/settings/linkedin/disconnect`, {
+    method: "DELETE",
+  });
+  if (!r.ok) throw new Error("Failed to disconnect LinkedIn");
+}
