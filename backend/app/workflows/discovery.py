@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime
 from typing import Optional
@@ -28,7 +29,11 @@ def _get_or_create_settings(db: Session) -> UserSettings:
 def _get_enabled_scrapers(settings: UserSettings, browser) -> list[BaseJobScraper]:
     scrapers: list[BaseJobScraper] = [YCScraper()]
     cookie = decrypt(settings.linkedin_cookie_encrypted)
-    if cookie and settings.linkedin_search_url:
+    search_urls = json.loads(settings.linkedin_search_urls or "[]")
+    # Fall back to legacy single URL if new list is empty
+    if not search_urls and settings.linkedin_search_url:
+        search_urls = [settings.linkedin_search_url]
+    if cookie and search_urls:
         scrapers.append(LinkedInScraper(browser=browser, cookie=cookie))
     return scrapers
 
@@ -53,13 +58,26 @@ async def run_discovery(db: Session) -> int:
     scrapers = _get_enabled_scrapers(settings, browser)
     new_count = 0
 
+    # Build the list of (scraper, params) pairs.
+    # LinkedIn runs once per URL; other scrapers run once with their own params.
+    scraper_runs: list[tuple] = []
+    search_urls = json.loads(settings.linkedin_search_urls or "[]")
+    if not search_urls and settings.linkedin_search_url:
+        search_urls = [settings.linkedin_search_url]
+
     for scraper in scrapers:
-        params = _build_params_for(scraper, settings)
+        if scraper.source_name == "linkedin" and search_urls:
+            for url in search_urls:
+                scraper_runs.append((scraper, {"search_url": url}))
+        else:
+            scraper_runs.append((scraper, _build_params_for(scraper, settings)))
+
+    for scraper, params in scraper_runs:
         try:
             raw_jobs = await scraper.scrape(params)
         except SessionExpiredError as e:
-            logger.warning("Session expired for %s: %s — disabling discovery", scraper.source_name, e)
-            settings.discovery_enabled = False
+            logger.warning("LinkedIn session expired: %s", e)
+            settings.linkedin_auth_status = "expired"
             db.commit()
             continue
         except Exception as e:
