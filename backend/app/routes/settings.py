@@ -1,12 +1,15 @@
+import asyncio
 import json
+import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.settings import UserSettings
 from app.schemas.preferences import PreferencesResponse, PreferencesUpdate
 from app.schemas.settings import SettingsResponse, SettingsUpdate
+from app.services.browser import _auth_sessions, open_login_window
 from app.services.crypto import encrypt
 from app.services.linkedin_url_builder import build_search_urls
 
@@ -109,3 +112,29 @@ def update_preferences(data: PreferencesUpdate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(s)
     return _to_preferences_response(s)
+
+
+@router.post("/linkedin/start-auth")
+async def start_linkedin_auth(db: Session = Depends(get_db)):
+    """Spawn a visible Chromium login window. Returns session_id for polling."""
+    session_id = str(uuid.uuid4())
+    asyncio.create_task(open_login_window(session_id))
+    return {"session_id": session_id}
+
+
+@router.get("/linkedin/auth-status/{session_id}")
+def get_linkedin_auth_status(session_id: str):
+    """Poll for LinkedIn auth completion. Returns waiting|connected|timeout."""
+    if session_id not in _auth_sessions:
+        raise HTTPException(status_code=404, detail="Unknown session_id")
+    return _auth_sessions[session_id]
+
+
+@router.delete("/linkedin/disconnect")
+def disconnect_linkedin(db: Session = Depends(get_db)):
+    """Clear the LinkedIn session cookie and reset auth status."""
+    s = _get_or_create(db)
+    s.linkedin_cookie_encrypted = None
+    s.linkedin_auth_status = "disconnected"
+    db.commit()
+    return {"status": "disconnected"}
