@@ -28,6 +28,9 @@ out/
 # OS
 .DS_Store
 
+# Superpowers brainstorming sessions
+.superpowers/
+
 # Runtime artifacts (deploy.sh)
 logs/
 .pids/
