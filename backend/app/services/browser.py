@@ -5,9 +5,14 @@ Used by both scrapers (LinkedIn) and form fillers (Greenhouse/Lever/Ashby).
 """
 import asyncio
 import logging
+import uuid
 from typing import Any, Optional
 
 from playwright.async_api import Browser, BrowserContext, Page, async_playwright
+
+from app.database import SessionLocal
+from app.models.settings import UserSettings
+from app.services.crypto import encrypt
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +64,64 @@ class BrowserService:
         if cookies:
             await context.add_cookies(cookies)
         return await context.new_page()
+
+
+# Module-level dict tracking in-progress LinkedIn auth sessions.
+# Safe for single-process local deployment.
+# Key: session_id (uuid4 string), Value: {"status": "waiting"|"connected"|"timeout"}
+_auth_sessions: dict[str, dict] = {}
+
+
+async def open_login_window(session_id: str) -> None:
+    """Spawn a visible Chromium window for LinkedIn login.
+
+    Polls for the li_at session cookie, saves it encrypted to DB, then closes.
+    Updates _auth_sessions[session_id] to reflect outcome.
+    """
+    _auth_sessions[session_id] = {"status": "waiting"}
+
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(
+            headless=False,
+            args=["--no-sandbox", "--disable-blink-features=AutomationControlled"],
+        )
+        try:
+            context = await browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+                )
+            )
+            page = await context.new_page()
+            await page.goto("https://www.linkedin.com/login")
+
+            deadline = asyncio.get_event_loop().time() + 300  # 5-minute timeout
+            while asyncio.get_event_loop().time() < deadline:
+                await asyncio.sleep(2)
+                cookies = await context.cookies()
+                li_at = next(
+                    (c["value"] for c in cookies if c["name"] == "li_at"), None
+                )
+                if li_at:
+                    db = SessionLocal()
+                    try:
+                        s = db.query(UserSettings).first()
+                        if not s:
+                            s = UserSettings()
+                            db.add(s)
+                        s.linkedin_cookie_encrypted = encrypt(li_at)
+                        s.linkedin_auth_status = "connected"
+                        db.commit()
+                    finally:
+                        db.close()
+                    _auth_sessions[session_id] = {"status": "connected"}
+                    logger.info("LinkedIn auth captured for session %s", session_id)
+                    return
+
+            _auth_sessions[session_id] = {"status": "timeout"}
+            logger.warning("LinkedIn auth timed out for session %s", session_id)
+        finally:
+            await browser.close()
 
 
 # Module-level singleton, instantiated lazily
