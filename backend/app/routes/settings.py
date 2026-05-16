@@ -1,10 +1,14 @@
+import json
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.settings import UserSettings
+from app.schemas.preferences import PreferencesResponse, PreferencesUpdate
 from app.schemas.settings import SettingsResponse, SettingsUpdate
 from app.services.crypto import encrypt
+from app.services.linkedin_url_builder import build_search_urls
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -61,3 +65,47 @@ def update_settings(data: SettingsUpdate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(s)
     return _to_response(s)
+
+
+def _to_preferences_response(s: UserSettings) -> PreferencesResponse:
+    urls = json.loads(s.linkedin_search_urls or "[]")
+    return PreferencesResponse(
+        job_titles=json.loads(s.job_titles or "[]"),
+        locations=json.loads(s.locations or "[]"),
+        remote_preference=s.remote_preference,
+        seniority_levels=json.loads(s.seniority_levels or "[]"),
+        company_stage=s.company_stage,
+        min_salary=s.min_salary,
+        linkedin_auth_status=s.linkedin_auth_status,
+        linkedin_search_urls=urls,
+        linkedin_search_url=urls[0] if urls else s.linkedin_search_url,
+    )
+
+
+@router.get("/preferences", response_model=PreferencesResponse)
+def get_preferences(db: Session = Depends(get_db)):
+    return _to_preferences_response(_get_or_create(db))
+
+
+@router.put("/preferences", response_model=PreferencesResponse)
+def update_preferences(data: PreferencesUpdate, db: Session = Depends(get_db)):
+    s = _get_or_create(db)
+    payload = data.model_dump(exclude_unset=True)
+
+    # JSON-encode list fields before storing
+    for list_field in ("job_titles", "locations", "seniority_levels"):
+        if list_field in payload:
+            payload[list_field] = json.dumps(payload[list_field])
+
+    for key, value in payload.items():
+        setattr(s, key, value)
+
+    # Rebuild search URLs from updated preferences
+    urls = build_search_urls(s)
+    s.linkedin_search_urls = json.dumps(urls)
+    # Keep legacy single-URL field in sync
+    s.linkedin_search_url = urls[0] if urls else None
+
+    db.commit()
+    db.refresh(s)
+    return _to_preferences_response(s)
