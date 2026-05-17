@@ -9,7 +9,7 @@ from app.database import get_db
 from app.models.settings import UserSettings
 from app.schemas.preferences import PreferencesResponse, PreferencesUpdate
 from app.schemas.settings import SettingsResponse, SettingsUpdate
-from app.services.browser import _auth_sessions, open_login_window
+from app.services.browser import _auth_sessions, open_login_window, prune_auth_session
 from app.services.crypto import encrypt
 from app.services.linkedin_url_builder import build_search_urls
 
@@ -124,10 +124,17 @@ async def start_linkedin_auth(db: Session = Depends(get_db)):
 
 @router.get("/linkedin/auth-status/{session_id}")
 def get_linkedin_auth_status(session_id: str):
-    """Poll for LinkedIn auth completion. Returns waiting|connected|timeout."""
+    """Poll for LinkedIn auth completion. Returns waiting|connected|timeout|error.
+
+    Prunes the session entry from memory once a terminal status is read, so
+    long-running processes don't accumulate stale auth sessions.
+    """
     if session_id not in _auth_sessions:
         raise HTTPException(status_code=404, detail="Unknown session_id")
-    return _auth_sessions[session_id]
+    result = _auth_sessions[session_id]
+    if result.get("status") in {"connected", "timeout", "error"}:
+        prune_auth_session(session_id)
+    return result
 
 
 @router.delete("/linkedin/disconnect")
